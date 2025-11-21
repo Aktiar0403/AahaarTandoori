@@ -1,95 +1,127 @@
-import React from 'react';
+// src/screens/OrderTrackingScreen.js
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  Animated,
   TouchableOpacity,
 } from 'react-native';
-import { useCart } from '../context/CartContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const OrderHistoryScreen = () => {
-  const { orders } = useCart();
+const OrderTrackingScreen = ({ route, navigation }) => {
+  const { order } = route.params || {};
+  const [progress] = useState(new Animated.Value(0));
+  
+  const orderStages = [
+    { status: 'confirmed', label: 'Order Confirmed', time: '2 min ago' },
+    { status: 'preparing', label: 'Preparing Food', time: 'Currently' },
+    { status: 'cooking', label: 'Cooking', time: 'Next' },
+    { status: 'ready', label: 'Ready for Pickup', time: 'Estimated 15 min' },
+    { status: 'delivered', label: 'Delivered', time: 'Estimated 30 min' },
+  ];
 
-  const formatDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'delivered': return '#28a745';
-      case 'preparing': return '#ffc107';
-      case 'pending': return '#dc3545';
-      default: return '#6c757d';
-    }
-  };
-
-  if (orders.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>No Orders Yet</Text>
-        <Text style={styles.emptySubtitle}>Your order history will appear here</Text>
-      </View>
-    );
-  }
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 0.4, // 40% progress (confirmed -> preparing)
+      duration: 2000,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Order History</Text>
-        <Text style={styles.subtitle}>{orders.length} orders</Text>
+      <LinearGradient
+        colors={['#1a1a1a', '#2d1b0e']}
+        style={styles.header}
+      >
+        <Text style={styles.headerTitle}>Order Tracking</Text>
+        <Text style={styles.orderNumber}>Order #{(order?.id || '123456').slice(-6)}</Text>
+        <Text style={styles.estimatedTime}>Estimated delivery: 30-45 minutes</Text>
+      </LinearGradient>
+
+      <View style={styles.progressSection}>
+        <Text style={styles.sectionTitle}>Order Status</Text>
+        
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBackground}>
+            <Animated.View 
+              style={[
+                styles.progressFill,
+                {
+                  width: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
+          
+          {/* Progress Steps */}
+          <View style={styles.progressSteps}>
+            {orderStages.map((stage, index) => (
+              <View key={stage.status} style={styles.stepContainer}>
+                <View style={[
+                  styles.stepDot,
+                  index <= 1 ? styles.activeDot : styles.inactiveDot
+                ]}>
+                  <Text style={styles.stepNumber}>{index + 1}</Text>
+                </View>
+                <View style={styles.stepInfo}>
+                  <Text style={[
+                    styles.stepLabel,
+                    index <= 1 ? styles.activeText : styles.inactiveText
+                  ]}>
+                    {stage.label}
+                  </Text>
+                  <Text style={styles.stepTime}>{stage.time}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
 
-      {orders.map((order) => (
-        <TouchableOpacity key={order.id} style={styles.orderCard}>
-          <View style={styles.orderHeader}>
-            <View>
-              <Text style={styles.orderId}>Order #{order.id.slice(-6)}</Text>
-              <Text style={styles.orderDate}>{formatDate(order.timestamp)}</Text>
-            </View>
-            <View style={styles.orderStatus}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: getStatusColor(order.status) },
-                ]}
-              />
-              <Text style={styles.statusText}>{order.status}</Text>
-            </View>
+      {/* Order Details */}
+      <View style={styles.detailsSection}>
+        <Text style={styles.sectionTitle}>Order Details</Text>
+        <View style={styles.detailsCard}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Order Time</Text>
+            <Text style={styles.detailValue}>{new Date().toLocaleString()}</Text>
           </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Delivery Address</Text>
+            <Text style={styles.detailValue}>
+              {order?.deliveryAddress || '123 Food Street, Mumbai'}
+            </Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Payment Method</Text>
+            <Text style={styles.detailValue}>Cash on Delivery</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Total Amount</Text>
+            <Text style={styles.detailValue}>₹{order?.total || '0'}</Text>
+          </View>
+        </View>
+      </View>
 
-          <View style={styles.orderDetails}>
-            <Text style={styles.customerName}>{order.customerName}</Text>
-            <Text style={styles.deliveryAddress}>{order.deliveryAddress}</Text>
-          </View>
-
-          <View style={styles.orderItems}>
-            {order.items.slice(0, 2).map((item, index) => (
-              <Text key={index} style={styles.orderItem}>
-                {item.quantity}x {item.name} ({item.portion})
-              </Text>
-            ))}
-            {order.items.length > 2 && (
-              <Text style={styles.moreItems}>
-                +{order.items.length - 2} more items
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.orderFooter}>
-            <Text style={styles.totalAmount}>₹{order.total}</Text>
-            <TouchableOpacity style={styles.reorderButton}>
-              <Text style={styles.reorderText}>Reorder</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      ))}
+      {/* Contact Support */}
+      <View style={styles.supportSection}>
+        <Text style={styles.sectionTitle}>Need Help?</Text>
+        <View style={styles.supportCard}>
+          <Text style={styles.supportText}>
+            Your order is being prepared with care. If you have any questions about your order:
+          </Text>
+          <TouchableOpacity style={styles.supportButton}>
+            <Text style={styles.supportButtonText}>Contact Support</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 };
@@ -97,136 +129,151 @@ const OrderHistoryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 60,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 60,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    backgroundColor: '#1a1a1a',
   },
   header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    padding: 30,
+    paddingTop: 80,
+    alignItems: 'center',
   },
-  title: {
+  headerTitle: {
+    color: '#d4af37',
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 5,
-  },
-  orderCard: {
-    backgroundColor: '#fff',
-    margin: 20,
-    marginBottom: 10,
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15,
-  },
-  orderId: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  orderDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  orderStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusBadge: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    textTransform: 'capitalize',
-  },
-  orderDetails: {
-    marginBottom: 15,
-  },
-  customerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+  orderNumber: {
+    color: '#ffffff',
+    fontSize: 18,
     marginBottom: 4,
   },
-  deliveryAddress: {
+  estimatedTime: {
+    color: '#8b7355',
     fontSize: 14,
-    color: '#666',
-    lineHeight: 18,
   },
-  orderItems: {
-    marginBottom: 15,
+  progressSection: {
+    padding: 20,
   },
-  orderItem: {
+  sectionTitle: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  progressContainer: {
+    alignItems: 'center',
+  },
+  progressBackground: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#333',
+    borderRadius: 2,
+    marginBottom: 40,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#d4af37',
+    borderRadius: 2,
+  },
+  progressSteps: {
+    width: '100%',
+  },
+  stepContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  stepDot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  activeDot: {
+    backgroundColor: '#d4af37',
+  },
+  inactiveDot: {
+    backgroundColor: '#333',
+  },
+  stepNumber: {
+    color: '#1a1a1a',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  stepInfo: {
+    flex: 1,
+  },
+  stepLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  activeText: {
+    color: '#d4af37',
+  },
+  inactiveText: {
+    color: '#8b7355',
+  },
+  stepTime: {
+    color: '#8b7355',
     fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
   },
-  moreItems: {
-    fontSize: 14,
-    color: '#c52c28',
-    fontStyle: 'italic',
+  detailsSection: {
+    padding: 20,
   },
-  orderFooter: {
+  detailsCard: {
+    backgroundColor: '#2d1b0e',
+    borderRadius: 15,
+    padding: 20,
+  },
+  detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 15,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
   },
-  totalAmount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#c52c28',
+  detailLabel: {
+    color: '#8b7355',
+    fontSize: 14,
   },
-  reorderButton: {
-    backgroundColor: '#c52c28',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  reorderText: {
-    color: '#fff',
+  detailValue: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: 10,
+  },
+  supportSection: {
+    padding: 20,
+  },
+  supportCard: {
+    backgroundColor: '#2d1b0e',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+  },
+  supportText: {
+    color: '#8b7355',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  supportButton: {
+    backgroundColor: '#d4af37',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  supportButtonText: {
+    color: '#1a1a1a',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 
-export default OrderHistoryScreen;
+export default OrderTrackingScreen;

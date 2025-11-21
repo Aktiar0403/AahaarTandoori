@@ -1,4 +1,4 @@
-// Placeholder App.js
+// App.js - Enhanced with your restaurant's actual branding
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -18,7 +18,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import MenuScreen from './src/screens/MenuScreen';
 import CartScreen from './src/screens/CartScreen';
 import AdminScreen from './src/screens/AdminScreen';
-import OrderHistoryScreen from './src/screens/OrderHistoryScreen';
+import OrderTrackingScreen from './src/screens/OrderTrackingScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -35,19 +35,19 @@ function MainTabs() {
           else if (route.name === 'Admin') iconName = focused ? 'settings' : 'settings-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#c52c28',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#d4af37', // Gold color for premium feel
+        tabBarInactiveTintColor: '#8b7355',
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: '#1a1a1a',
           borderTopWidth: 1,
-          borderTopColor: '#f0f0f0',
+          borderTopColor: '#333',
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Menu" component={MenuScreen} />
-      <Tab.Screen name="Cart" component={CartScreen} />
-      <Tab.Screen name="Admin" component={AdminScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
+      <Tab.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
+      <Tab.Screen name="Cart" component={CartScreen} options={{ title: 'Cart' }} />
+      <Tab.Screen name="Admin" component={AdminScreen} options={{ title: 'Manage' }} />
     </Tab.Navigator>
   );
 }
@@ -58,8 +58,19 @@ export default function App() {
       <MenuProvider>
         <CartProvider>
           <NavigationContainer>
-            <StatusBar style="auto" />
-            <Stack.Navigator initialRouteName="Login">
+            <StatusBar style="light" />
+            <Stack.Navigator 
+              initialRouteName="Login"
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: '#1a1a1a',
+                },
+                headerTintColor: '#d4af37',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                },
+              }}
+            >
               <Stack.Screen 
                 name="Login" 
                 component={LoginScreen}
@@ -71,9 +82,9 @@ export default function App() {
                 options={{ headerShown: false }}
               />
               <Stack.Screen 
-                name="OrderHistory" 
-                component={OrderHistoryScreen}
-                options={{ title: 'Order History' }}
+                name="OrderTracking" 
+                component={OrderTrackingScreen}
+                options={{ title: 'Track Your Order' }}
               />
             </Stack.Navigator>
           </NavigationContainer>
@@ -82,10 +93,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-});
